@@ -1,0 +1,55 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+const char* ssid = "XXX"; // Your WiFi SSID
+const char* password = "XXX"; // Your WiFi Password
+
+const char* serverUrl = "http://192.168.0.154:3000/endpoint"; // Your server URL
+unsigned long startTime;
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  Serial.println("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected to WiFi");
+  startTime = millis(); // Store the start time
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/json");
+
+    // Calculate the time elapsed since the start in seconds
+    unsigned long elapsedTime = (millis() - startTime) / 1000;
+
+    // Prepare your JSON payload with the elapsed time
+    String payload = "{\"timeSinceStart\": \"" + String(elapsedTime) + " seconds\"}";
+
+    Serial.println("Sending POST request...");
+    int httpResponseCode = http.POST(payload);
+
+    if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      String response = http.getString();
+      Serial.println("Response: " + response);
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+
+  delay(10000); // Send a request every 10 seconds
+}
